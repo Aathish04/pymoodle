@@ -1,6 +1,6 @@
 import requests
 import json
-from typing import Union,Literal,Any
+from typing import List, Union,Literal,Any
 
 class MoodleError(Exception):
     def __init__(self, error, errorcode=None, stacktrace=None, debuginfo=None, reproductionlink=None):
@@ -109,7 +109,7 @@ class MoodleWebServiceAPIClient():
         }
         return self._api_call("core_enrol_get_users_courses",data)
 
-    def get_users_by_field(self,field:Literal['id','idnumber','username','email'],values=list[str]):
+    def get_users_by_field(self,field:Literal['id','idnumber','username','email'],values=List[str]):
         data = self._flatten_rest_api_arguments({"values":values},{"field":field})
         return self._api_call("core_user_get_users_by_field",data=data)
 
