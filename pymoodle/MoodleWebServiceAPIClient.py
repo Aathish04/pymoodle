@@ -109,6 +109,10 @@ class MoodleWebServiceAPIClient():
         }
         return self._api_call("core_enrol_get_users_courses",data)
 
+    def get_users_by_field(self,field:Literal['id','idnumber','username','email'],values=list[str]):
+        data = self._flatten_rest_api_arguments({"values":values},{"field":field})
+        return self._api_call("core_user_get_users_by_field",data=data)
+
     def get_course_enrolled_users(self,courseid:Union[str,int],options:list[dict[Literal["name","value"],str]]=[{"name":"userfields","value":"(idnumber,roles,email,username)"}]) -> list:
         data = {'courseid': courseid}
         data = self._flatten_rest_api_arguments({"options":options},flattened_dict=data)
@@ -129,3 +133,4 @@ if __name__=="__main__":
     students = sorted([user for user in enrolled_users if user not in faculty],key=lambda user:user["fullname"].upper()) # ideally should use user["idnumber"] to sort.
 
     print(json.dumps(students,indent=4))
+    print(client.get_users_by_field("id",values=["519"]))
