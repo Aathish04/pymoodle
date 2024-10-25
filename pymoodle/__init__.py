@@ -1,1 +1,1 @@
-from MoodleWebServiceAPIClient import *
+from .MoodleWebServiceAPIClient import *
