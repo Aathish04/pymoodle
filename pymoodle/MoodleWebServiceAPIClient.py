@@ -102,18 +102,18 @@ class MoodleWebServiceAPIClient():
     def core_webservice_get_site_info(self) -> dict:
             return self._api_call("core_webservice_get_site_info", {})
 
-    def get_user_courses(self, userid: Union[str, int], returnusercount: Literal[0, 1] = 0) -> list:
+    def core_enrol_get_users_courses(self, userid: Union[str, int], returnusercount: Literal[0, 1] = 0) -> list:
         data = {
             'userid': userid,
             'returnusercount': returnusercount
         }
         return self._api_call("core_enrol_get_users_courses", data)
 
-    def get_users_by_field(self, field: Literal['id', 'idnumber', 'username', 'email'], values: List[str]):
+    def core_user_get_users_by_field(self, field: Literal['id', 'idnumber', 'username', 'email'], values: List[str]):
         data = self._flatten_rest_api_arguments({"values": values}, {"field": field})
         return self._api_call("core_user_get_users_by_field", data=data)
 
-    def get_course_enrolled_users(self, courseid: Union[str, int], options: List[Dict[Literal["name", "value"], str]] = [{"name": "userfields", "value": "(idnumber,roles,email,username)"}]) -> list:
+    def core_enrol_get_enrolled_users(self, courseid: Union[str, int], options: List[Dict[Literal["name", "value"], str]] = [{"name": "userfields", "value": "(idnumber,roles,email,username)"}]) -> list:
         data = {'courseid': courseid}
         data = self._flatten_rest_api_arguments({"options": options}, flattened_dict=data)
         return self._api_call("core_enrol_get_enrolled_users", data)
@@ -131,13 +131,13 @@ if __name__ == "__main__":
         api_base=environ.get("MOODLE_API_BASE"),
         headers=HEADERS
         )
-    client_courses = client.get_user_courses(client.site_info["userid"])
+    client_courses = client.core_enrol_get_users_courses(client.site_info["userid"])
     client_courses.sort(key=lambda course: course["startdate"], reverse=True)
     course = client_courses[0]
-    enrolled_users = client.get_course_enrolled_users(course["id"])
+    enrolled_users = client.core_enrol_get_enrolled_users(course["id"])
 
     faculty = [user for user in enrolled_users if any(role["roleid"] < 5 for role in user["roles"])]
     students = sorted([user for user in enrolled_users if user not in faculty], key=lambda user: user["fullname"].upper())  # ideally should use user["idnumber"] to sort.
 
     print(json.dumps(students, indent=4))
-    print(client.get_users_by_field("id", values=["519"]))
+    print(client.core_user_get_users_by_field("id", values=["519"]))
