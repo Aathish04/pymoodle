@@ -44,13 +44,12 @@ class MoodleWebServiceAPIClient():
 
         self.API_BASE = api_base
         self.TOKEN = token
-        self.CLIENT_USER_DATA = None
         self.HEADERS = headers
 
         if not self.TOKEN:
             self.TOKEN = self._authenticate(username, password)
 
-        self._set_client_user_data(force=True)
+        self.site_info = self.core_webservice_get_site_info()
 
     def _authenticate(self, username: str, password: str) -> str:
         data = {
@@ -69,23 +68,6 @@ class MoodleWebServiceAPIClient():
 
         return response_json["token"]
 
-    def _api_call(self, wsfunction: str, data: dict) -> dict:
-        data['wstoken'] = self.TOKEN
-        data['wsfunction'] = wsfunction
-        data['moodlewsrestformat'] = "json"
-        response = requests.post(f'{self.API_BASE}/webservice/rest/server.php', data=data, headers=self._HEADERS)
-        response.raise_for_status()  # Handle potential HTTP errors
-        response_json = response.json()
-        if "error" in response_json:
-            raise MoodleError(**response_json)
-        elif "exception" in response_json:
-            raise MoodleException(**response_json)
-        return response_json
-
-    def _set_client_user_data(self, force: bool = False) -> None:
-        if force or self.CLIENT_USER_DATA is None:
-            self.CLIENT_USER_DATA = self._api_call("core_webservice_get_site_info", {})
-
     @classmethod
     def _flatten_rest_api_arguments(cls, arguments: Any, flattened_dict: Dict[str, Any] = {}, parent_obj_prefix: str = "") -> dict:
 
@@ -103,6 +85,22 @@ class MoodleWebServiceAPIClient():
                 cls._flatten_rest_api_arguments(value, flattened_dict, new_parent_obj_prefix)
 
         return flattened_dict
+
+    def _api_call(self, wsfunction: str, data: dict) -> dict:
+        data['wstoken'] = self.TOKEN
+        data['wsfunction'] = wsfunction
+        data['moodlewsrestformat'] = "json"
+        response = requests.post(f'{self.API_BASE}/webservice/rest/server.php', data=data, headers=self._HEADERS)
+        response.raise_for_status()  # Handle potential HTTP errors
+        response_json = response.json()
+        if "error" in response_json:
+            raise MoodleError(**response_json)
+        elif "exception" in response_json:
+            raise MoodleException(**response_json)
+        return response_json
+
+    def core_webservice_get_site_info(self) -> dict:
+            return self._api_call("core_webservice_get_site_info", {})
 
     def get_user_courses(self, userid: Union[str, int], returnusercount: Literal[0, 1] = 0) -> list:
         data = {
@@ -127,12 +125,13 @@ if __name__ == "__main__":
     HEADERS = MoodleWebServiceAPIClient._HEADERS.copy()
     HEADERS["User-Agent"] = "SSN AttendEase/0.0 AppWrite Cloud"
     client = MoodleWebServiceAPIClient(
-        username=environ.get("MOODLE_API_USERNAME"),
-        password=environ.get("MOODLE_API_PASSWORD"),
+        # username=environ.get("MOODLE_API_USERNAME"),
+        # password=environ.get("MOODLE_API_PASSWORD"),
+        token=environ.get("MOODLE_API_TOKEN"),
         api_base=environ.get("MOODLE_API_BASE"),
         headers=HEADERS
         )
-    client_courses = client.get_user_courses(client.CLIENT_USER_DATA["userid"])
+    client_courses = client.get_user_courses(client.site_info["userid"])
     client_courses.sort(key=lambda course: course["startdate"], reverse=True)
     course = client_courses[0]
     enrolled_users = client.get_course_enrolled_users(course["id"])
