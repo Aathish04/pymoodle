@@ -19,4 +19,7 @@ setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
+    extras_require={
+        "dev": ["python-dotenv"],
+    },
 )

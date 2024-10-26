@@ -28,13 +28,15 @@ class MoodleException(Exception):
 
 class MoodleWebServiceAPIClient():
     _HEADERS = {
-        'accept': 'application/json',
+        "Accept": "application/json",
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Cache-Control": ":no-cache",
         'sec-fetch-mode': 'cors',
         'sec-fetch-site': 'cross-site',
-        'user-agent': 'CSE Dept Attendance App',
+        'User-Agent': 'pymoodle API Client',
     }
 
-    def __init__(self, token=None, username=None, password=None, api_base=None) -> None:
+    def __init__(self, token=None, username=None, password=None, api_base=None, headers = _HEADERS) -> None:
         if not (token or (username and password)):
             raise ValueError("Either token or both username and password must be provided.")
         if not api_base:
@@ -43,6 +45,7 @@ class MoodleWebServiceAPIClient():
         self.API_BASE = api_base
         self.TOKEN = token
         self.CLIENT_USER_DATA = None
+        self.HEADERS = headers
 
         if not self.TOKEN:
             self.TOKEN = self._authenticate(username, password)
@@ -56,7 +59,7 @@ class MoodleWebServiceAPIClient():
             'password': password,
             "service": "moodle_mobile_app"
         }
-        response = requests.post(f'{self.API_BASE}/login/token.php', data=data, headers=self._HEADERS)
+        response = requests.post(f'{self.API_BASE}/login/token.php', data=data, headers=self.HEADERS)
         response.raise_for_status()  # Handle potential HTTP errors
         response_json = response.json()
         if "error" in response_json:
@@ -118,11 +121,17 @@ class MoodleWebServiceAPIClient():
         return self._api_call("core_enrol_get_enrolled_users", data)
 
 if __name__ == "__main__":
+    from dotenv import load_dotenv
+    load_dotenv()
+    from os import environ
+    HEADERS = MoodleWebServiceAPIClient._HEADERS.copy()
+    HEADERS["User-Agent"] = "SSN AttendEase/0.0 AppWrite Cloud"
     client = MoodleWebServiceAPIClient(
-        # username="student1",
-        username="aathish2110240@ssn.edu.in",
-        password="",
-        api_base="https://lms.ssn.edu.in")
+        username=environ.get("MOODLE_API_USERNAME"),
+        password=environ.get("MOODLE_API_PASSWORD"),
+        api_base=environ.get("MOODLE_API_BASE"),
+        headers=HEADERS
+        )
     client_courses = client.get_user_courses(client.CLIENT_USER_DATA["userid"])
     client_courses.sort(key=lambda course: course["startdate"], reverse=True)
     course = client_courses[0]
